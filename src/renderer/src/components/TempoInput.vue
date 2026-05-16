@@ -1,9 +1,14 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { nextTick, onMounted, ref, watch } from 'vue'
 
-import { MAX_DIGITOS_TEMPO, parsearDigitosTempo } from '@renderer/lib/tempoFormat'
+import {
+  MAX_DIGITOS_TEMPO,
+  formatarTempo,
+  parsearDigitosTempo,
+  segundosParaDigitos
+} from '@renderer/lib/tempoFormat'
 
-defineProps<{
+const props = defineProps<{
   modelValue: number
   id: string
   placeholder?: string
@@ -16,12 +21,30 @@ const emit = defineEmits<{
 
 const inputRef = ref<HTMLInputElement | null>(null)
 const digitos = ref('')
+const estaFocado = ref(false)
+
+function atualizarCampoFormatado(): void {
+  const el = inputRef.value
+  if (!el || estaFocado.value) return
+  el.value = props.modelValue > 0 ? formatarTempo(props.modelValue) : ''
+}
+
+watch(
+  () => props.modelValue,
+  () => {
+    atualizarCampoFormatado()
+  }
+)
 
 function aoFocar(): void {
-  digitos.value = ''
+  estaFocado.value = true
+  digitos.value = props.modelValue > 0 ? segundosParaDigitos(props.modelValue) : ''
   nextTick(() => {
     const el = inputRef.value
-    if (el) el.value = ''
+    if (!el) return
+    el.value = digitos.value
+    const fim = el.value.length
+    el.setSelectionRange(fim, fim)
   })
 }
 
@@ -47,7 +70,10 @@ function aoDigitar(): void {
 }
 
 function aoSair(): void {
+  estaFocado.value = false
+
   if (!digitos.value) {
+    atualizarCampoFormatado()
     return
   }
 
@@ -55,14 +81,15 @@ function aoSair(): void {
   if (seg === null) {
     emit('invalido')
     digitos.value = ''
-    if (inputRef.value) inputRef.value.value = ''
+    atualizarCampoFormatado()
     return
   }
 
   emit('update:modelValue', seg)
-  digitos.value = ''
-  if (inputRef.value) inputRef.value.value = ''
+  nextTick(() => atualizarCampoFormatado())
 }
+
+onMounted(() => atualizarCampoFormatado())
 </script>
 
 <template>
@@ -74,7 +101,7 @@ function aoSair(): void {
     autocomplete="off"
     class="input-tempo"
     :placeholder="placeholder ?? 'ex. 130 = 1:30'"
-    maxlength="4"
+    maxlength="7"
     @focus="aoFocar"
     @input="aoDigitar"
     @blur="aoSair"

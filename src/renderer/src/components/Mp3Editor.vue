@@ -668,8 +668,8 @@ onBeforeUnmount(() => {
           <div ref="areaOnda" class="w-full" :class="{ invisible: ondaFalhou }" />
         </div>
         <p class="mt-4 text-xs text-ink/55">
-          Tempo em <strong>min:seg</strong> — digite só números (máx. 4). Ex.: <strong>130</strong> = 1:30,
-          <strong>1230</strong> = 12:30. O formato com <strong>:</strong> aparece ao sair do campo.
+          Tempo em <strong>min:seg</strong> — digite só números (máx. 4). Ex.: <strong>130</strong> = 1:30. Ao sair do
+          campo aparece formatado (ex.: <strong>1:30</strong>).
         </p>
       </div>
 
