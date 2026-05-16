@@ -668,8 +668,8 @@ onBeforeUnmount(() => {
           <div ref="areaOnda" class="w-full" :class="{ invisible: ondaFalhou }" />
         </div>
         <p class="mt-4 text-xs text-ink/55">
-          Tempo em <strong>minutos:segundos</strong> — digite só números (máx. 4). Ex.: <strong>130</strong> →
-          <strong>1:30</strong>, <strong>1230</strong> → <strong>12:30</strong>.
+          Tempo em <strong>min:seg</strong> — digite só números (máx. 4). Ex.: <strong>130</strong> = 1:30,
+          <strong>1230</strong> = 12:30. O formato com <strong>:</strong> aparece ao sair do campo.
         </p>
       </div>
 
@@ -743,7 +743,7 @@ onBeforeUnmount(() => {
             <TempoInput
               id="tempo-aparo-fim"
               :model-value="aparoFim"
-              placeholder="m:ss"
+              placeholder="ex. 130 = 1:30"
               @update:model-value="aplicarTempoSegundos('aparoFim', $event)"
               @invalido="avisoTempoInvalido"
             />
@@ -754,7 +754,7 @@ onBeforeUnmount(() => {
             <TempoInput
               id="tempo-aparo-inicio"
               :model-value="aparoInicio"
-              placeholder="m:ss"
+              placeholder="ex. 130 = 1:30"
               @update:model-value="aplicarTempoSegundos('aparoInicio', $event)"
               @invalido="avisoTempoInvalido"
             />
@@ -772,7 +772,7 @@ onBeforeUnmount(() => {
             <TempoInput
               id="tempo-rem-inicio"
               :model-value="remInicio"
-              placeholder="m:ss"
+              placeholder="ex. 130 = 1:30"
               @update:model-value="aplicarTempoSegundos('remInicio', $event)"
               @invalido="avisoTempoInvalido"
             />
@@ -782,7 +782,7 @@ onBeforeUnmount(() => {
             <TempoInput
               id="tempo-rem-fim"
               :model-value="remFim"
-              placeholder="m:ss"
+              placeholder="ex. 130 = 1:30"
               @update:model-value="aplicarTempoSegundos('remFim', $event)"
               @invalido="avisoTempoInvalido"
             />
