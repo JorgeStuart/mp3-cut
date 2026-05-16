@@ -20,8 +20,16 @@ import {
   fatiarBuffer,
   juntarComCrossfade
 } from '@renderer/lib/audioMp3'
+import {
+  compartilharArquivo,
+  criarArquivoParaBaixar,
+  dispararDownloadPorLink,
+  podeCompartilharArquivo,
+  revogarArquivoParaBaixar,
+  type ArquivoParaBaixar
+} from '@renderer/lib/downloadArquivo'
 import { formatarTempo, limitarSeg, parsearTempoTexto } from '@renderer/lib/tempoFormat'
-import { ehWeb } from '@renderer/lib/plataforma'
+import { ehMobile, ehWeb } from '@renderer/lib/plataforma'
 import { gerarPicosOnda } from '@renderer/lib/waveformPeaks'
 
 type Modo = 'aparar' | 'remover-meio'
@@ -34,6 +42,9 @@ const arrastando = ref(false)
 const carregando = ref(false)
 const processando = ref(false)
 const mensagem = ref<string | null>(null)
+/** Arquivo pronto na web — link visível no celular (iOS ignora download automático). */
+const arquivoExportado = ref<ArquivoParaBaixar | null>(null)
+const compartilhando = ref(false)
 
 const nomeBase = ref('')
 const extensaoArquivo = ref('')
@@ -73,6 +84,36 @@ const tituloRegiao = computed(() => (modo.value === 'remover-meio' ? 'Trecho a s
 
 function definirMensagem(texto: string | null): void {
   mensagem.value = texto
+}
+
+function limparArquivoExportado(): void {
+  revogarArquivoParaBaixar(arquivoExportado.value)
+  arquivoExportado.value = null
+}
+
+const podeUsarCompartilhar = computed(() => {
+  const arq = arquivoExportado.value
+  return arq !== null && podeCompartilharArquivo(arq)
+})
+
+async function aoCompartilharExportado(): Promise<void> {
+  const arq = arquivoExportado.value
+  if (!arq) return
+
+  compartilhando.value = true
+  try {
+    await compartilharArquivo(arq)
+    definirMensagem('Use “Salvar em Arquivos” ou outro app na lista para guardar o áudio.')
+  } catch (e) {
+    if (e instanceof Error && e.name === 'AbortError') {
+      definirMensagem('Compartilhamento cancelado.')
+      return
+    }
+    const texto = e instanceof Error ? e.message : String(e)
+    definirMensagem(`Não foi possível abrir o compartilhamento: ${texto}`)
+  } finally {
+    compartilhando.value = false
+  }
 }
 
 function obterContextoAudio(): AudioContext {
@@ -314,6 +355,7 @@ async function carregarDeOrigem(nome: string, bytes: ArrayBuffer, mime = ''): Pr
 
   carregando.value = true
   definirMensagem(null)
+  limparArquivoExportado()
 
   try {
     await garantirContextoAtivo()
@@ -489,18 +531,18 @@ async function salvarArquivoEditado(): Promise<void> {
         definirMensagem(`Pronto! Arquivo salvo em: ${res.caminho ?? ''}`)
       }
     } else {
-      const blob = new Blob([bytes], { type: mime })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = sugerido
-      a.click()
-      URL.revokeObjectURL(url)
-      definirMensagem(
-        ehWeb
-          ? 'Download iniciado. No celular, confira a pasta de downloads ou Arquivos.'
-          : 'Download iniciado no navegador.'
-      )
+      limparArquivoExportado()
+      const pronto = criarArquivoParaBaixar(bytes, sugerido, mime)
+      arquivoExportado.value = pronto
+
+      if (ehMobile) {
+        definirMensagem(
+          'Arquivo pronto! Toque em “Baixar arquivo” abaixo. No iPhone, use “Compartilhar” → Salvar em Arquivos.'
+        )
+      } else {
+        dispararDownloadPorLink(pronto.url, pronto.nome)
+        definirMensagem('Download iniciado no navegador.')
+      }
     }
   } catch (e) {
     const texto = e instanceof Error ? e.message : String(e)
@@ -529,6 +571,7 @@ watch([modo, tipoAparo], () => {
 
 onBeforeUnmount(() => {
   limparWaveform()
+  limparArquivoExportado()
   void audioContext?.close()
   audioContext = null
 })
@@ -756,21 +799,49 @@ onBeforeUnmount(() => {
         </p>
       </div>
 
-      <div class="barra-salvar flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <button
-          type="button"
-          class="btn-primario"
-          :disabled="processando"
-          @click="salvarArquivoEditado()"
+      <div class="barra-salvar flex flex-col gap-3">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <button
+            type="button"
+            class="btn-primario"
+            :disabled="processando"
+            @click="salvarArquivoEditado()"
+          >
+            {{ processando ? textoProcessando : rotuloSalvar }}
+          </button>
+          <p
+            v-if="mensagem"
+            class="rounded-xl bg-paper px-3 py-2 text-center text-sm leading-relaxed text-ink/75 sm:text-left"
+          >
+            {{ mensagem }}
+          </p>
+        </div>
+
+        <div
+          v-if="arquivoExportado && ehWeb"
+          class="flex flex-col gap-2 rounded-2xl border border-accent/30 bg-accent/5 p-4"
         >
-          {{ processando ? textoProcessando : rotuloSalvar }}
-        </button>
-        <p
-          v-if="mensagem"
-          class="rounded-xl bg-paper px-3 py-2 text-center text-sm leading-relaxed text-ink/75 sm:text-left"
-        >
-          {{ mensagem }}
-        </p>
+          <p class="text-center text-sm font-medium text-ink">Arquivo cortado pronto</p>
+          <a
+            :href="arquivoExportado.url"
+            :download="arquivoExportado.nome"
+            class="btn-primario text-center no-underline"
+          >
+            Baixar {{ arquivoExportado.nome }}
+          </a>
+          <button
+            v-if="podeUsarCompartilhar"
+            type="button"
+            class="btn-secundario"
+            :disabled="compartilhando"
+            @click="void aoCompartilharExportado()"
+          >
+            {{ compartilhando ? 'Abrindo…' : 'Compartilhar / Salvar em Arquivos' }}
+          </button>
+          <p v-else-if="ehMobile" class="text-center text-xs text-ink/60">
+            Se o botão Baixar não funcionar, use Compartilhar ou abra no Chrome.
+          </p>
+        </div>
       </div>
     </div>
   </section>
