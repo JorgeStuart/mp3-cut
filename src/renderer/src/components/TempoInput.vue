@@ -76,7 +76,7 @@ function aoSair(): void {
     class="input-tempo"
     :value="textoExibido"
     :placeholder="placeholder ?? '0:00'"
-    maxlength="8"
+    maxlength="6"
     @input="aoDigitar"
     @blur="aoSair"
   />

@@ -156,7 +156,7 @@ function moverRegiao(inicio: number, fim: number): void {
 
 function avisoTempoInvalido(): void {
   definirMensagem(
-    'Tempo inválido. Digite só números (até 6) — o campo formata com ":" (ex.: 130 vira 1:30).'
+    'Tempo inválido. Use minutos:segundos — só números (até 4), ex.: 130 vira 1:30.'
   )
 }
 
@@ -668,8 +668,8 @@ onBeforeUnmount(() => {
           <div ref="areaOnda" class="w-full" :class="{ invisible: ondaFalhou }" />
         </div>
         <p class="mt-4 text-xs text-ink/55">
-          Tempo: digite só números (máx. 6). O campo mostra <strong>:</strong> automaticamente — ex. digite
-          <strong>130</strong> e aparece <strong>1:30</strong>.
+          Tempo em <strong>minutos:segundos</strong> — digite só números (máx. 4). Ex.: <strong>130</strong> →
+          <strong>1:30</strong>, <strong>1230</strong> → <strong>12:30</strong>.
         </p>
       </div>
 
