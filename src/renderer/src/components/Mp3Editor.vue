@@ -31,6 +31,8 @@ import {
 import { formatarTempo, limitarSeg } from '@renderer/lib/tempoFormat'
 import TempoInput from './TempoInput.vue'
 import { ehMobile, ehWeb } from '@renderer/lib/plataforma'
+
+type TempoInputInstancia = { aplicarDigitosPendentes: () => boolean }
 import { gerarPicosOnda } from '@renderer/lib/waveformPeaks'
 
 type Modo = 'aparar' | 'remover-meio'
@@ -46,6 +48,12 @@ const mensagem = ref<string | null>(null)
 /** Arquivo pronto na web — link visível no celular (iOS ignora download automático). */
 const arquivoExportado = ref<ArquivoParaBaixar | null>(null)
 const compartilhando = ref(false)
+const areaDownload = ref<HTMLElement | null>(null)
+
+const refTempoAparoFim = ref<TempoInputInstancia | null>(null)
+const refTempoAparoInicio = ref<TempoInputInstancia | null>(null)
+const refTempoRemInicio = ref<TempoInputInstancia | null>(null)
+const refTempoRemFim = ref<TempoInputInstancia | null>(null)
 
 const nomeBase = ref('')
 const extensaoArquivo = ref('')
@@ -158,6 +166,30 @@ function avisoTempoInvalido(): void {
   definirMensagem(
     'Tempo inválido. Use minutos:segundos — só números (até 4), ex.: 130 vira 1:30.'
   )
+}
+
+/** Garante que o tempo digitado (ainda no campo) entra no corte antes de salvar. */
+async function commitarTemposDosCampos(): Promise<boolean> {
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur()
+  }
+  await nextTick()
+
+  const campos = [
+    refTempoAparoFim.value,
+    refTempoAparoInicio.value,
+    refTempoRemInicio.value,
+    refTempoRemFim.value
+  ]
+
+  for (const campo of campos) {
+    if (campo && !campo.aplicarDigitosPendentes()) {
+      return false
+    }
+  }
+
+  await nextTick()
+  return true
 }
 
 /**
@@ -480,12 +512,18 @@ async function salvarArquivoEditado(): Promise<void> {
     return
   }
 
+  if (!(await commitarTemposDosCampos())) {
+    return
+  }
+
   processando.value = true
   definirMensagem(null)
 
   try {
+    await garantirContextoAtivo()
+
     const finalBuffer = montarBufferFinal()
-    const sugerido = `${nomeBase.value || 'faixa'}-editado.${ext}`
+    let sugerido = `${nomeBase.value || 'faixa'}-editado.${ext}`
 
     let bytes: Uint8Array
     let mime: string
@@ -497,12 +535,20 @@ async function salvarArquivoEditado(): Promise<void> {
       transcodificarDeWav = ext !== 'wav' && ext !== 'wave'
       mime = 'audio/wav'
     } else if (ehFormatoMp3Familia(ext)) {
-      bytes = await codificarBufferParaMp3(finalBuffer, 128)
       mime = 'audio/mpeg'
+      try {
+        bytes = await codificarBufferParaMp3(finalBuffer, 128)
+      } catch {
+        bytes = codificarBufferParaWav(finalBuffer)
+        mime = 'audio/wav'
+        sugerido = `${nomeBase.value || 'faixa'}-editado.wav`
+        definirMensagem('Não foi possível gerar MP3 neste aparelho; o arquivo será salvo em WAV.')
+      }
     } else if (ext === 'wav' || ext === 'wave') {
       bytes = codificarBufferParaWav(finalBuffer)
       mime = 'audio/wav'
     } else if (FORMATOS_EXPORT_FFMPEG.has(ext)) {
+      processando.value = false
       definirMensagem(
         ehWeb
           ? `No navegador só exportamos MP3 ou WAV. Para ${rotuloFormato(ext)}, use o app instalado no PC ou converta depois.`
@@ -536,14 +582,18 @@ async function salvarArquivoEditado(): Promise<void> {
       const pronto = criarArquivoParaBaixar(bytes, sugerido, mime)
       arquivoExportado.value = pronto
 
+      const duracaoCorte = formatarTempo(finalBuffer.duration)
       if (ehMobile) {
         definirMensagem(
-          'Arquivo pronto! Toque em “Baixar arquivo” abaixo. No iPhone, use “Compartilhar” → Salvar em Arquivos.'
+          `Corte pronto (${duracaoCorte}). Toque em “Baixar” abaixo ou use “Compartilhar” → Salvar em Arquivos.`
         )
       } else {
         dispararDownloadPorLink(pronto.url, pronto.nome)
-        definirMensagem('Download iniciado no navegador.')
+        definirMensagem(`Download iniciado (${duracaoCorte}).`)
       }
+
+      await nextTick()
+      areaDownload.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
   } catch (e) {
     const texto = e instanceof Error ? e.message : String(e)
@@ -741,6 +791,7 @@ onBeforeUnmount(() => {
           <div v-if="tipoAparo === 'terminar-aqui'" class="rounded-2xl border border-line bg-white px-4 py-4">
             <label class="text-xs uppercase tracking-wide text-ink/50" for="tempo-aparo-fim">Encerrar em</label>
             <TempoInput
+              ref="refTempoAparoFim"
               id="tempo-aparo-fim"
               :model-value="aparoFim"
               placeholder="ex. 130 = 1:30"
@@ -752,6 +803,7 @@ onBeforeUnmount(() => {
           <div v-else class="rounded-2xl border border-line bg-white px-4 py-4">
             <label class="text-xs uppercase tracking-wide text-ink/50" for="tempo-aparo-inicio">Começar em</label>
             <TempoInput
+              ref="refTempoAparoInicio"
               id="tempo-aparo-inicio"
               :model-value="aparoInicio"
               placeholder="ex. 130 = 1:30"
@@ -770,6 +822,7 @@ onBeforeUnmount(() => {
           <div class="rounded-2xl border border-line bg-white px-4 py-4">
             <label class="text-xs uppercase tracking-wide text-ink/50" for="tempo-rem-inicio">Começa em</label>
             <TempoInput
+              ref="refTempoRemInicio"
               id="tempo-rem-inicio"
               :model-value="remInicio"
               placeholder="ex. 130 = 1:30"
@@ -780,6 +833,7 @@ onBeforeUnmount(() => {
           <div class="rounded-2xl border border-line bg-white px-4 py-4">
             <label class="text-xs uppercase tracking-wide text-ink/50" for="tempo-rem-fim">Termina em</label>
             <TempoInput
+              ref="refTempoRemFim"
               id="tempo-rem-fim"
               :model-value="remFim"
               placeholder="ex. 130 = 1:30"
@@ -813,6 +867,7 @@ onBeforeUnmount(() => {
 
         <div
           v-if="arquivoExportado && ehWeb"
+          ref="areaDownload"
           class="flex flex-col gap-2 rounded-2xl border border-accent/30 bg-accent/5 p-4"
         >
           <p class="text-center text-sm font-medium text-ink">Arquivo cortado pronto</p>

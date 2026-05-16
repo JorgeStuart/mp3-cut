@@ -36,6 +36,41 @@ watch(
   }
 )
 
+function emitirSeValido(): void {
+  if (!digitos.value) return
+  const seg = parsearDigitosTempo(digitos.value)
+  if (seg !== null) {
+    emit('update:modelValue', seg)
+  }
+}
+
+/** Usado antes de salvar — aplica o que ainda está sendo digitado. */
+function aplicarDigitosPendentes(): boolean {
+  if (!estaFocado.value) return true
+
+  if (!digitos.value) {
+    estaFocado.value = false
+    atualizarCampoFormatado()
+    return true
+  }
+
+  const seg = parsearDigitosTempo(digitos.value)
+  if (seg === null) {
+    emit('invalido')
+    digitos.value = ''
+    estaFocado.value = false
+    atualizarCampoFormatado()
+    return false
+  }
+
+  emit('update:modelValue', seg)
+  estaFocado.value = false
+  nextTick(() => atualizarCampoFormatado())
+  return true
+}
+
+defineExpose({ aplicarDigitosPendentes })
+
 function aoFocar(): void {
   estaFocado.value = true
   digitos.value = props.modelValue > 0 ? segundosParaDigitos(props.modelValue) : ''
@@ -64,6 +99,7 @@ function aoDigitar(): void {
 
   digitos.value = candidato
   el.value = candidato
+  emitirSeValido()
 
   const pos = Math.min(cursor, candidato.length)
   nextTick(() => el.setSelectionRange(pos, pos))

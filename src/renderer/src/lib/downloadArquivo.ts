@@ -7,7 +7,9 @@ export type ArquivoParaBaixar = {
 
 export function criarArquivoParaBaixar(bytes: Uint8Array, nome: string, mime: string): ArquivoParaBaixar {
   const copia = new Uint8Array(bytes)
-  const blob = new Blob([copia], { type: mime })
+  const blob = new Blob([copia.buffer.slice(copia.byteOffset, copia.byteOffset + copia.byteLength)], {
+    type: mime
+  })
   return {
     url: URL.createObjectURL(blob),
     nome,
