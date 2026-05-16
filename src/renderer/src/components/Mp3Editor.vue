@@ -28,7 +28,8 @@ import {
   revogarArquivoParaBaixar,
   type ArquivoParaBaixar
 } from '@renderer/lib/downloadArquivo'
-import { formatarTempo, limitarSeg, parsearTempoTexto } from '@renderer/lib/tempoFormat'
+import { formatarTempo, limitarSeg } from '@renderer/lib/tempoFormat'
+import TempoInput from './TempoInput.vue'
 import { ehMobile, ehWeb } from '@renderer/lib/plataforma'
 import { gerarPicosOnda } from '@renderer/lib/waveformPeaks'
 
@@ -153,20 +154,18 @@ function moverRegiao(inicio: number, fim: number): void {
   aplicarRegiaoVisual(inicio, fim)
 }
 
+function avisoTempoInvalido(): void {
+  definirMensagem(
+    'Tempo inválido. Digite só números (até 6) — o campo formata com ":" (ex.: 130 vira 1:30).'
+  )
+}
+
 /**
- * Aplica tempo digitado (números compactos ou h:mm:ss) e sincroniza com a onda.
+ * Aplica tempo em segundos e sincroniza com a região na onda.
  */
-function aplicarTempo(campo: CampoTempo, texto: string): void {
+function aplicarTempoSegundos(campo: CampoTempo, seg: number): void {
   const dur = bufferDecodificado.value?.duration
   if (!dur) return
-
-  const seg = parsearTempoTexto(texto)
-  if (seg === null) {
-    definirMensagem(
-      'Tempo inválido. Digite só números (ex.: 130 = 1:30, 10130 = 1:01:30) ou use 1:30 / 1:01:30.'
-    )
-    return
-  }
 
   if (modo.value === 'aparar') {
     if (tipoAparo.value === 'terminar-aqui' && campo === 'aparoFim') {
@@ -669,8 +668,8 @@ onBeforeUnmount(() => {
           <div ref="areaOnda" class="w-full" :class="{ invisible: ondaFalhou }" />
         </div>
         <p class="mt-4 text-xs text-ink/55">
-          Tempo: digite só números — <strong>130</strong> vira 1:30, <strong>10130</strong> vira 1:01:30 — ou use
-          <strong>1:30</strong> / <strong>1:01:30</strong> com dois-pontos.
+          Tempo: digite só números (máx. 6). O campo mostra <strong>:</strong> automaticamente — ex. digite
+          <strong>130</strong> e aparece <strong>1:30</strong>.
         </p>
       </div>
 
@@ -741,27 +740,23 @@ onBeforeUnmount(() => {
         <div class="grid gap-4 sm:grid-cols-2">
           <div v-if="tipoAparo === 'terminar-aqui'" class="rounded-2xl border border-line bg-white px-4 py-4">
             <label class="text-xs uppercase tracking-wide text-ink/50" for="tempo-aparo-fim">Encerrar em</label>
-            <input
+            <TempoInput
               id="tempo-aparo-fim"
-              type="text"
-              inputmode="numeric"
-              class="input-tempo"
-              :value="formatarTempo(aparoFim)"
-              placeholder="Ex.: 230 ou 2:30"
-              @change="aplicarTempo('aparoFim', ($event.target as HTMLInputElement).value)"
+              :model-value="aparoFim"
+              placeholder="0:00"
+              @update:model-value="aplicarTempoSegundos('aparoFim', $event)"
+              @invalido="avisoTempoInvalido"
             />
             <p class="mt-2 text-xs text-ink/60">Duração total: {{ formatarTempo(duracao) }}</p>
           </div>
           <div v-else class="rounded-2xl border border-line bg-white px-4 py-4">
             <label class="text-xs uppercase tracking-wide text-ink/50" for="tempo-aparo-inicio">Começar em</label>
-            <input
+            <TempoInput
               id="tempo-aparo-inicio"
-              type="text"
-              inputmode="numeric"
-              class="input-tempo"
-              :value="formatarTempo(aparoInicio)"
-              placeholder="Ex.: 15 ou 0:15"
-              @change="aplicarTempo('aparoInicio', ($event.target as HTMLInputElement).value)"
+              :model-value="aparoInicio"
+              placeholder="0:00"
+              @update:model-value="aplicarTempoSegundos('aparoInicio', $event)"
+              @invalido="avisoTempoInvalido"
             />
             <p class="mt-2 text-xs text-ink/60">Duração total: {{ formatarTempo(duracao) }}</p>
           </div>
@@ -774,26 +769,22 @@ onBeforeUnmount(() => {
         <div class="mt-4 grid gap-4 sm:grid-cols-2">
           <div class="rounded-2xl border border-line bg-white px-4 py-4">
             <label class="text-xs uppercase tracking-wide text-ink/50" for="tempo-rem-inicio">Começa em</label>
-            <input
+            <TempoInput
               id="tempo-rem-inicio"
-              type="text"
-              inputmode="numeric"
-              class="input-tempo"
-              :value="formatarTempo(remInicio)"
-              placeholder="Ex.: 30 ou 0:30"
-              @change="aplicarTempo('remInicio', ($event.target as HTMLInputElement).value)"
+              :model-value="remInicio"
+              placeholder="0:00"
+              @update:model-value="aplicarTempoSegundos('remInicio', $event)"
+              @invalido="avisoTempoInvalido"
             />
           </div>
           <div class="rounded-2xl border border-line bg-white px-4 py-4">
             <label class="text-xs uppercase tracking-wide text-ink/50" for="tempo-rem-fim">Termina em</label>
-            <input
+            <TempoInput
               id="tempo-rem-fim"
-              type="text"
-              inputmode="numeric"
-              class="input-tempo"
-              :value="formatarTempo(remFim)"
-              placeholder="Ex.: 100 ou 1:00"
-              @change="aplicarTempo('remFim', ($event.target as HTMLInputElement).value)"
+              :model-value="remFim"
+              placeholder="0:00"
+              @update:model-value="aplicarTempoSegundos('remFim', $event)"
+              @invalido="avisoTempoInvalido"
             />
           </div>
         </div>
