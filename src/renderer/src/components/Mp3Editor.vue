@@ -743,7 +743,7 @@ onBeforeUnmount(() => {
             <TempoInput
               id="tempo-aparo-fim"
               :model-value="aparoFim"
-              placeholder="0:00"
+              placeholder="m:ss"
               @update:model-value="aplicarTempoSegundos('aparoFim', $event)"
               @invalido="avisoTempoInvalido"
             />
@@ -754,7 +754,7 @@ onBeforeUnmount(() => {
             <TempoInput
               id="tempo-aparo-inicio"
               :model-value="aparoInicio"
-              placeholder="0:00"
+              placeholder="m:ss"
               @update:model-value="aplicarTempoSegundos('aparoInicio', $event)"
               @invalido="avisoTempoInvalido"
             />
@@ -772,7 +772,7 @@ onBeforeUnmount(() => {
             <TempoInput
               id="tempo-rem-inicio"
               :model-value="remInicio"
-              placeholder="0:00"
+              placeholder="m:ss"
               @update:model-value="aplicarTempoSegundos('remInicio', $event)"
               @invalido="avisoTempoInvalido"
             />
@@ -782,7 +782,7 @@ onBeforeUnmount(() => {
             <TempoInput
               id="tempo-rem-fim"
               :model-value="remFim"
-              placeholder="0:00"
+              placeholder="m:ss"
               @update:model-value="aplicarTempoSegundos('remFim', $event)"
               @invalido="avisoTempoInvalido"
             />

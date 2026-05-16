@@ -1,12 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
-import {
-  formatarDigitosComColons,
-  parsearDigitosTempo,
-  podeAceitarDigitos,
-  segundosParaDigitos
-} from '@renderer/lib/tempoFormat'
+import { MAX_DIGITOS_TEMPO, formatarDigitosComColons, parsearDigitosTempo } from '@renderer/lib/tempoFormat'
 
 const props = defineProps<{
   modelValue: number
@@ -19,64 +14,77 @@ const emit = defineEmits<{
   invalido: []
 }>()
 
+const inputRef = ref<HTMLInputElement | null>(null)
 const digitos = ref('')
-const textoExibido = ref('')
+const estaFocado = ref(false)
 
-function sincronizarDeSegundos(seg: number): void {
-  digitos.value = segundosParaDigitos(seg)
-  textoExibido.value = formatarDigitosComColons(digitos.value)
+const textoExibido = computed(() => formatarDigitosComColons(digitos.value))
+
+function posicionarCursorNoFim(): void {
+  nextTick(() => {
+    const el = inputRef.value
+    if (!el) return
+    const fim = el.value.length
+    el.setSelectionRange(fim, fim)
+  })
 }
 
-watch(
-  () => props.modelValue,
-  (seg) => {
-    sincronizarDeSegundos(seg)
-  },
-  { immediate: true }
-)
+function aoFocar(): void {
+  estaFocado.value = true
+  digitos.value = ''
+  posicionarCursorNoFim()
+}
 
-function aoDigitar(evento: Event): void {
-  const campo = evento.target as HTMLInputElement
-  const candidato = campo.value.replace(/\D/g, '')
+function aoDigitar(): void {
+  const el = inputRef.value
+  if (!el) return
 
-  if (!podeAceitarDigitos(candidato)) {
-    campo.value = textoExibido.value
+  const candidato = el.value.replace(/\D/g, '').slice(0, MAX_DIGITOS_TEMPO)
+
+  if (candidato.length >= 2 && Number(candidato.slice(-2)) >= 60) {
+    el.value = textoExibido.value
+    posicionarCursorNoFim()
     return
   }
 
   digitos.value = candidato
-  textoExibido.value = formatarDigitosComColons(candidato)
-  campo.value = textoExibido.value
+  nextTick(() => {
+    if (!inputRef.value) return
+    inputRef.value.value = textoExibido.value
+    posicionarCursorNoFim()
+  })
 }
 
 function aoSair(): void {
+  estaFocado.value = false
+
   if (!digitos.value) {
-    sincronizarDeSegundos(props.modelValue)
     return
   }
 
   const seg = parsearDigitosTempo(digitos.value)
   if (seg === null) {
     emit('invalido')
-    sincronizarDeSegundos(props.modelValue)
+    digitos.value = ''
     return
   }
 
   emit('update:modelValue', seg)
-  sincronizarDeSegundos(seg)
+  digitos.value = ''
 }
 </script>
 
 <template>
   <input
     :id="id"
+    ref="inputRef"
     type="text"
     inputmode="numeric"
     autocomplete="off"
     class="input-tempo"
-    :value="textoExibido"
-    :placeholder="placeholder ?? '0:00'"
+    :placeholder="placeholder ?? 'm:ss'"
     maxlength="6"
+    @focus="aoFocar"
     @input="aoDigitar"
     @blur="aoSair"
   />
