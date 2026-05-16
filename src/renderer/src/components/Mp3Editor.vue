@@ -154,7 +154,7 @@ function moverRegiao(inicio: number, fim: number): void {
 }
 
 /**
- * Aplica tempo digitado (min:seg) e sincroniza com a região na onda, se existir.
+ * Aplica tempo digitado (números compactos ou h:mm:ss) e sincroniza com a onda.
  */
 function aplicarTempo(campo: CampoTempo, texto: string): void {
   const dur = bufferDecodificado.value?.duration
@@ -162,7 +162,9 @@ function aplicarTempo(campo: CampoTempo, texto: string): void {
 
   const seg = parsearTempoTexto(texto)
   if (seg === null) {
-    definirMensagem('Tempo inválido. Use minutos:segundos, por exemplo 2:15 ou 0:45.')
+    definirMensagem(
+      'Tempo inválido. Digite só números (ex.: 130 = 1:30, 10130 = 1:01:30) ou use 1:30 / 1:01:30.'
+    )
     return
   }
 
@@ -667,7 +669,8 @@ onBeforeUnmount(() => {
           <div ref="areaOnda" class="w-full" :class="{ invisible: ondaFalhou }" />
         </div>
         <p class="mt-4 text-xs text-ink/55">
-          Formato: <strong>minutos:segundos</strong> (ex.: 1:30). Os campos de tempo definem o corte mesmo sem a onda.
+          Tempo: digite só números — <strong>130</strong> vira 1:30, <strong>10130</strong> vira 1:01:30 — ou use
+          <strong>1:30</strong> / <strong>1:01:30</strong> com dois-pontos.
         </p>
       </div>
 
@@ -737,27 +740,27 @@ onBeforeUnmount(() => {
 
         <div class="grid gap-4 sm:grid-cols-2">
           <div v-if="tipoAparo === 'terminar-aqui'" class="rounded-2xl border border-line bg-white px-4 py-4">
-            <label class="text-xs uppercase tracking-wide text-ink/50" for="tempo-aparo-fim">Encerrar em (min:seg)</label>
+            <label class="text-xs uppercase tracking-wide text-ink/50" for="tempo-aparo-fim">Encerrar em</label>
             <input
               id="tempo-aparo-fim"
               type="text"
               inputmode="numeric"
               class="input-tempo"
               :value="formatarTempo(aparoFim)"
-              placeholder="Ex.: 2:30"
+              placeholder="Ex.: 230 ou 2:30"
               @change="aplicarTempo('aparoFim', ($event.target as HTMLInputElement).value)"
             />
             <p class="mt-2 text-xs text-ink/60">Duração total: {{ formatarTempo(duracao) }}</p>
           </div>
           <div v-else class="rounded-2xl border border-line bg-white px-4 py-4">
-            <label class="text-xs uppercase tracking-wide text-ink/50" for="tempo-aparo-inicio">Começar em (min:seg)</label>
+            <label class="text-xs uppercase tracking-wide text-ink/50" for="tempo-aparo-inicio">Começar em</label>
             <input
               id="tempo-aparo-inicio"
               type="text"
               inputmode="numeric"
               class="input-tempo"
               :value="formatarTempo(aparoInicio)"
-              placeholder="Ex.: 0:15"
+              placeholder="Ex.: 15 ou 0:15"
               @change="aplicarTempo('aparoInicio', ($event.target as HTMLInputElement).value)"
             />
             <p class="mt-2 text-xs text-ink/60">Duração total: {{ formatarTempo(duracao) }}</p>
@@ -770,26 +773,26 @@ onBeforeUnmount(() => {
         <p class="text-sm font-medium text-ink">Trecho a ser removido</p>
         <div class="mt-4 grid gap-4 sm:grid-cols-2">
           <div class="rounded-2xl border border-line bg-white px-4 py-4">
-            <label class="text-xs uppercase tracking-wide text-ink/50" for="tempo-rem-inicio">Começa em (min:seg)</label>
+            <label class="text-xs uppercase tracking-wide text-ink/50" for="tempo-rem-inicio">Começa em</label>
             <input
               id="tempo-rem-inicio"
               type="text"
               inputmode="numeric"
               class="input-tempo"
               :value="formatarTempo(remInicio)"
-              placeholder="Ex.: 0:30"
+              placeholder="Ex.: 30 ou 0:30"
               @change="aplicarTempo('remInicio', ($event.target as HTMLInputElement).value)"
             />
           </div>
           <div class="rounded-2xl border border-line bg-white px-4 py-4">
-            <label class="text-xs uppercase tracking-wide text-ink/50" for="tempo-rem-fim">Termina em (min:seg)</label>
+            <label class="text-xs uppercase tracking-wide text-ink/50" for="tempo-rem-fim">Termina em</label>
             <input
               id="tempo-rem-fim"
               type="text"
               inputmode="numeric"
               class="input-tempo"
               :value="formatarTempo(remFim)"
-              placeholder="Ex.: 1:00"
+              placeholder="Ex.: 100 ou 1:00"
               @change="aplicarTempo('remFim', ($event.target as HTMLInputElement).value)"
             />
           </div>
