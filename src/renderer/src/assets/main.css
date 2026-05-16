@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    height: 100%;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    min-height: 100%;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  #app {
+    min-height: 100%;
+  }
+}
+
+@layer components {
+  .card-app {
+    @apply rounded-2xl border border-line bg-white shadow-soft sm:rounded-3xl;
+  }
+
+  .input-tempo {
+    @apply mt-2 w-full min-h-[3rem] rounded-xl border border-line bg-paper px-3 py-3 text-center text-xl font-semibold tabular-nums tracking-wide text-accent focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25 sm:min-h-[3.25rem] sm:text-left sm:text-2xl;
+  }
+
+  .btn-primario {
+    @apply inline-flex min-h-[3rem] w-full items-center justify-center rounded-full bg-accent px-6 py-3.5 text-base font-semibold text-white shadow-soft transition active:scale-[0.98] hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:py-3;
+  }
+
+  .btn-secundario {
+    @apply inline-flex min-h-[2.75rem] w-full items-center justify-center rounded-full border border-line bg-white px-5 py-2.5 text-sm font-medium text-ink/80 transition active:scale-[0.98] hover:border-accent/60 hover:text-accent sm:w-auto;
+  }
+
+  .btn-modo {
+    @apply rounded-2xl border px-4 py-4 text-left transition active:scale-[0.99] sm:px-5 sm:py-5;
+  }
+
+  .barra-salvar {
+    @apply sticky bottom-0 z-20 -mx-4 mt-6 border-t border-line/80 bg-white/90 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-md sm:static sm:z-auto sm:mx-0 sm:mt-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:pb-0 sm:backdrop-blur-none;
+  }
+}

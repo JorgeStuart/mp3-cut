@@ -1,0 +1,102 @@
+{
+  "name": "mp3-cut",
+  "version": "1.0.0",
+  "description": "Editor de MP3 simples — corte ponta ou remova um trecho do meio.",
+  "homepage": "https://github.com/JorgeStuart/mp3-cut",
+  "main": "out/main/index.cjs",
+  "author": {
+    "name": "Jorge Stuart",
+    "email": "jorgestuart@users.noreply.github.com"
+  },
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "env -u ELECTRON_RUN_AS_NODE electron-vite dev",
+    "build": "npm run build:app && electron-builder",
+    "build:app": "electron-vite build",
+    "dist": "npm run build",
+    "dist:linux": "npm run build:app && electron-builder --linux",
+    "dist:linux-rpm": "npm run build:app && electron-builder --linux rpm",
+    "dist:win": "npm run build:app && electron-builder --win --x64",
+    "dist:mac": "npm run build:app && electron-builder --mac",
+    "share": "bash scripts/preparar-pasta-distribuicao.sh",
+    "preview": "env -u ELECTRON_RUN_AS_NODE electron-vite preview",
+    "dev:web": "VITE_BASE_PATH=/ vite --config vite.config.web.ts",
+    "build:web": "vue-tsc --noEmit && vite build --config vite.config.web.ts && cp -f dist-web/index.web.html dist-web/index.html",
+    "preview:web": "VITE_BASE_PATH=/mp3-cut/ npm run build:web && vite preview --config vite.config.web.ts",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.3.0",
+    "lamejs": "^1.2.1",
+    "vue": "^3.5.13",
+    "wavesurfer.js": "^7.8.6"
+  },
+  "devDependencies": {
+    "@swc/core": "^1.13.19",
+    "@vitejs/plugin-vue": "^5.2.4",
+    "autoprefixer": "^10.4.20",
+    "electron": "^34.2.0",
+    "electron-builder": "^26.6.9",
+    "electron-vite": "^5.0.0",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
+    "typescript": "~5.7.3",
+    "vite": "^6.3.6",
+    "vue-tsc": "^2.2.8"
+  },
+  "build": {
+    "appId": "com.mp3cut.app",
+    "productName": "MP3 Cortar",
+    "copyright": "Copyright © ${author}",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "out/**/*",
+      "package.json",
+      "node_modules/ffmpeg-static/**/*"
+    ],
+    "asarUnpack": [
+      "node_modules/ffmpeg-static/**"
+    ],
+    "artifactName": "MP3-Cortar-${version}-${os}-${arch}.${ext}",
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "AudioVideo",
+      "executableName": "mp3-cortar",
+      "maintainer": "Jorge Stuart <jorgestuart@users.noreply.github.com>",
+      "vendor": "Jorge Stuart",
+      "synopsis": "Corte áudio no computador, sem internet",
+      "description": "Editor local para aparar início/fim ou remover um trecho do meio do áudio (MP3, WAV, OGG, FLAC e mais)."
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.music",
+      "icon": "build/icon.png"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerLanguages": [
+        "pt_BR",
+        "en_US"
+      ],
+      "language": "1046"
+    }
+  }
+}
